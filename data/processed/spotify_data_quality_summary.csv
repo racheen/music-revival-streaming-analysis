@@ -1,0 +1,6 @@
+metric,value
+dataset1_rows_after_dedup,947.0
+dataset2_rows_after_dedup,5882.0
+merged_rows,947.0
+rows_with_genre_match,36.0
+genre_match_rate,0.03801478352692714
