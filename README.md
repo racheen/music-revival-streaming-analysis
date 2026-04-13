@@ -93,8 +93,8 @@ dashboard.
 
 ### Run data pipeline
 
-    python src/standardize_spotify.py
-    python src/build_analysis_tables.py
+    python src/standardize_data.py
+    python src/build_analysis_table.py
 
 ### Launch dashboard
 
