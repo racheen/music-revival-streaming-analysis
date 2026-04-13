@@ -1,4 +1,4 @@
 metric,value
-spotify_track_entropy,0.25429540756785074
-spotify_stream_entropy,0.3568889887567333
-genre_count_in_cross_table,15.0
+spotify_track_entropy,2.604848532052609
+spotify_stream_entropy,2.074539110246699
+genre_count_in_cross_table,16.0

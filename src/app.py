@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PROCESSED = PROJECT_ROOT / "data" / "processed"
+RAW = PROJECT_ROOT / "data" / "raw"
 
 st.set_page_config(
     page_title="Cross-Era Music BI Dashboard",
@@ -14,7 +15,6 @@ st.set_page_config(
 
 st.title("Historical Genre Revival and Streaming-Era Dominance")
 st.caption("Cross-era Business Intelligence dashboard for comparing LOC revival patterns with Spotify-era streaming metrics.")
-
 
 @st.cache_data
 def load_data():
@@ -96,10 +96,32 @@ def generate_genre_insight(row):
 
     return " ".join(parts)
 
+def read_csv_safe(file_path):
+    """
+    Read CSV file with automatic encoding detection
+    """
+    encodings = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252', 'utf-16']
+    
+    for encoding in encodings:
+        try:
+            df = pd.read_csv(file_path, encoding=encoding)
+            print(f"  ✓ Successfully read with encoding: {encoding}")
+            return df
+        except UnicodeDecodeError:
+            continue
+        except Exception as e:
+            print(f"  Error with {encoding}: {e}")
+            continue
+    
+    # If all fail, try with errors='ignore'
+    print(f"  ⚠ Using fallback encoding with error handling")
+    df = pd.read_csv(file_path, encoding='utf-8', errors='ignore')
+    return df
+
 
 page = st.sidebar.radio(
     "Navigate",
-    ["Overview", "Genre Explorer", "Cross-Era Comparison", "Title Explorer", "Smart Insights"]
+    ["Overview", "Genre Explorer", "Cross-Era Comparison", "Title Explorer", "Spotify EDA", "Smart Insights"]
 )
 
 if page == "Overview":
@@ -259,3 +281,100 @@ elif page == "Smart Insights":
         st.markdown(generate_genre_insight(row))
         with st.expander("Supporting Metrics"):
             st.dataframe(pd.DataFrame(row).reset_index(), use_container_width=True)
+
+elif page == "Spotify EDA":
+
+    st.title("Spotify Dataset – Exploratory Data Analysis")
+
+    st.markdown("This section explores the raw Spotify datasets before integration.")
+    st.info("This EDA supports data quality assessment and explains preprocessing decisions.")
+    
+    # =========================
+    # LOAD DATA
+    # =========================
+    df1 = read_csv_safe(f"{RAW}/spotify-music/Popular_Spotify_Songs.csv")
+    df2 = read_csv_safe(f"{RAW}/spotify-dataset/spotify_tracks.csv")
+
+    # =========================
+    # MISSING VALUES
+    # =========================
+    st.subheader("Missing Values")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Dataset 1**")
+        st.dataframe(df1.isnull().sum())
+
+    with col2:
+        st.markdown("**Dataset 2**")
+        st.dataframe(df2.isnull().sum())
+
+    # =========================
+    # STREAM DISTRIBUTION
+    # =========================
+    st.subheader("Stream Distribution")
+
+    fig, ax = plt.subplots()
+    ax.hist(df1["streams"], bins=50)
+    ax.set_title("Distribution of Streams")
+    ax.set_xlabel("Streams")
+    ax.set_ylabel("Frequency")
+    st.pyplot(fig)
+
+    st.markdown(
+        "Streams are highly right-skewed, indicating concentration of attention among a small number of tracks."
+    )
+
+    # =========================
+    # POPULARITY
+    # =========================
+    st.subheader("Popularity Distribution")
+
+    fig, ax = plt.subplots()
+    ax.hist(df2["popularity"], bins=30)
+    ax.set_title("Popularity Distribution")
+    st.pyplot(fig)
+
+    # =========================
+    # AUDIO FEATURES
+    # =========================
+    st.subheader("Audio Features")
+
+    features = [
+        "danceability_%",
+        "energy_%",
+        "valence_%"
+    ]
+
+    for feature in features:
+        fig, ax = plt.subplots()
+        ax.hist(df1[feature], bins=30)
+        ax.set_title(f"{feature} Distribution")
+        st.pyplot(fig)
+
+    # =========================
+    # TRACK DURATION
+    # =========================
+    st.subheader("Track Duration")
+
+    fig, ax = plt.subplots()
+    ax.hist(df2["duration_ms"] / 60000, bins=30)
+    ax.set_title("Track Duration (minutes)")
+    st.pyplot(fig)
+
+    # =========================
+    # GENRE DISTRIBUTION
+    # =========================
+    st.subheader("Spotify Genre Distribution")
+
+    genre_counts = df2["genre"].value_counts().head(20)
+
+    fig, ax = plt.subplots()
+    genre_counts.plot(kind="bar", ax=ax)
+    ax.set_title("Top 20 Spotify Genres")
+    st.pyplot(fig)
+
+    st.markdown(
+        "Spotify genres are highly fragmented into microgenres, motivating the need for genre bucket mapping."
+    )
